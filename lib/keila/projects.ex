@@ -101,7 +101,7 @@ defmodule Keila.Projects do
       |> Auth.list_user_groups()
       |> Enum.map(& &1.id)
 
-    from(p in Project, where: p.group_id in ^user_group_ids)
+    from(p in Project, where: p.group_id in ^user_group_ids, order_by: [asc: p.name])
     |> Repo.all()
   end
 end
