@@ -12,13 +12,25 @@ defmodule Keila.Mailings.Renderer.BodyRenderer.Mjml do
   @impl true
   def render(output, %Input{} = input, assigns) do
     with {:ok, liquid_template} <- liquid_template(input),
-         {:ok, mjml} <- render_liquid(liquid_template, assigns),
-         {:ok, html_body} <- render_mjml(mjml) do
-      %{output | html_body: html_body, text_body: Renderer.html_to_text(html_body)}
+        {:ok, mjml} <- render_liquid(liquid_template, assigns),
+        {:ok, html_body} <- render_mjml(mjml),
+        {:ok, text_body} <- render_text_body(input, assigns, html_body) do
+      %{output | html_body: html_body, text_body: text_body}
     else
       {:error, reason} ->
         %{output | text_body: reason, errors: [reason | output.errors]}
     end
+  end
+
+  # Custom plain-text body provided with the campaign/message
+  defp render_text_body(%Input{text_body: text}, assigns, _html_body)
+      when is_binary(text) and text != "" do
+    render_liquid(text, assigns)
+  end
+
+  # No custom text: automatic conversion from HTML, as before
+  defp render_text_body(_input, _assigns, html_body) do
+    {:ok, Renderer.html_to_text(html_body)}
   end
 
   defp liquid_template(input) do
